@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaGrab - Instagram Video Downloader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --accent-gradient: linear-gradient(135deg, #f72585 0%, #7209b7 50%, #3a0ca3 100%);
+            --accent-pink: #f72585;
+            --accent-purple: #7209b7;
+            --accent-blue: #3a0ca3;
+            --whatsapp-green: #25D366;
+            --whatsapp-dark: #128C7E;
+            --instagram-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            --instagram-pink: #E1306C;
+            --instagram-purple: #833AB4;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glow-pink: rgba(247, 37, 133, 0.4);
+            --glow-purple: rgba(114, 9, 183, 0.4);
+            --success-green: #10b981;
+            --error-red: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-pattern::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse 800px 600px at 20% 30%, var(--glow-pink), transparent),
+                radial-gradient(ellipse 600px 800px at 80% 70%, var(--glow-purple), transparent),
+                radial-gradient(ellipse 400px 400px at 50% 50%, rgba(58, 12, 163, 0.2), transparent);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 2%) rotate(1deg); }
+            66% { transform: translate(-2%, 1%) rotate(-1deg); }
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 60px 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--accent-gradient);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px var(--glow-pink);
+        }
+
+        .logo-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .mode-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* Main Card */
+        .main-card {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 
+                0 4px 24px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Input Group - Single Mode */
+        .input-group {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 0 4px var(--glow-pink);
+        }
+
+        .input-icon {
+            padding: 0 20px;
+            color: var(--text-muted);
+        }
+
+        .input-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        #url-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 20px 20px 20px 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+        }
+
+        #url-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .paste-btn {
+            padding: 12px 20px;
+            margin: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .paste-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Multi-URL Input */
+        .multi-input-group {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .multi-input-group.active {
+            display: block;
+        }
+
+        .multi-input-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .multi-input-label span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .url-count {
+            font-size: 0.85rem;
+            color: var(--accent-pink);
+            font-weight: 500;
+        }
+
+        #multi-url-input {
+            width: 100%;
+            min-height: 180px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+            resize: vertical;
+            line-height: 1.8;
+            transition: all 0.3s ease;
+        }
+
+        #multi-url-input:focus {
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 0 4px var(--glow-pink);
+        }
+
+        #multi-url-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Download Button */
+        .download-btn {
+            width: 100%;
+            padding: 20px 32px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--glow-pink);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 40px 0;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            max-width: 300px;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Video Results - Batch */
+        .results-section {
+            display: none;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .results-summary {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .results-summary .success {
+            color: var(--success-green);
+        }
+
+        .results-summary .failed {
+            color: var(--error-red);
+        }
+
+        /* Video Card */
+        .video-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            margin-bottom: 12px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .video-card.error {
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .video-thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+
+        .video-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .video-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+
+        .video-uploader {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .video-error {
+            font-size: 0.85rem;
+            color: var(--error-red);
+        }
+
+        .video-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .action-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .action-btn.download {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .action-btn.download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px var(--glow-pink);
+        }
+
+        .action-btn.whatsapp {
+            background: var(--whatsapp-green);
+            color: white;
+        }
+
+        .action-btn.whatsapp:hover {
+            background: var(--whatsapp-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4);
+        }
+
+        .action-btn.instagram {
+            background: var(--instagram-gradient);
+            color: white;
+        }
+
+        .action-btn.instagram:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(225, 48, 108, 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* Single Video Success */
+        .success-card {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+            animation: scaleIn 0.4s ease-out;
+        }
+
+        .success-card.active {
+            display: block;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+        }
+
+        .success-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .success-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .success-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .success-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-file-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 28px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .download-file-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+        }
+
+        .whatsapp-share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 28px;
+            background: var(--whatsapp-green);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .whatsapp-share-btn:hover {
+            background: var(--whatsapp-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+        }
+
+        .instagram-share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 28px;
+            background: var(--instagram-gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .instagram-share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(225, 48, 108, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .whatsapp-share-btn svg,
+        .download-file-btn svg,
+        .instagram-share-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .new-download-btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px 24px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .new-download-btn:hover {
+            border-color: var(--accent-pink);
+            color: var(--text-primary);
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 16px;
+            color: #ef4444;
+            font-size: 0.9rem;
+            animation: shake 0.4s ease;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 50px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 20px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(114, 9, 183, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+        }
+
+        .feature-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--accent-pink);
+        }
+
+        .feature-icon.whatsapp {
+            background: rgba(37, 211, 102, 0.2);
+        }
+
+        .feature-icon.whatsapp svg {
+            fill: var(--whatsapp-green);
+        }
+
+        .feature-icon.instagram {
+            background: linear-gradient(45deg, rgba(240, 148, 51, 0.2), rgba(225, 48, 108, 0.2), rgba(131, 58, 180, 0.2));
+        }
+
+        .feature-icon.instagram svg {
+            fill: var(--instagram-pink);
+        }
+
+        .feature h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .feature p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            padding-top: 50px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* WhatsApp Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            animation: scaleIn 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--whatsapp-green);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        .modal-icon.instagram {
+            background: var(--instagram-gradient);
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+        }
+
+        .modal-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .share-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .share-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #instagram-options .share-option:hover {
+            background: rgba(225, 48, 108, 0.1);
+        }
+
+        #whatsapp-options .share-option:hover {
+            background: rgba(37, 211, 102, 0.1);
+        }
+
+        .share-option-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--whatsapp-green);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .share-option-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .share-option-text h4 {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .share-option-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .modal-close {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 700px) {
+            .features {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 16px;
+            }
+
+            .logo-text {
+                font-size: 2rem;
+            }
+
+            .main-card {
+                padding: 28px 20px;
+            }
+
+            .paste-btn {
+                display: none;
+            }
+
+            .video-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .video-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .success-actions {
+                flex-direction: column;
+            }
+
+            .download-file-btn,
+            .whatsapp-share-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </div>
+                <span class="logo-text">InstaGrab</span>
+            </div>
+            <p class="tagline">Download Instagram videos in seconds</p>
+        </header>
+
+        <main class="main-card">
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="single" onclick="switchMode('single')">
+                    Single Video
+                </button>
+                <button class="mode-btn" data-mode="batch" onclick="switchMode('batch')">
+                    Multiple Videos
+                </button>
+            </div>
+
+            <div id="form-section">
+                <!-- Single URL Input -->
+                <div class="input-group" id="single-input-group">
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                        </span>
+                        <input 
+                            type="url" 
+                            id="url-input" 
+                            placeholder="Paste Instagram video URL here..."
+                            autocomplete="off"
+                        >
+                        <button class="paste-btn" onclick="pasteFromClipboard('url-input')">
+                            Paste
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Multi URL Input -->
+                <div class="multi-input-group" id="multi-input-group">
+                    <div class="multi-input-label">
+                        <span>Paste multiple URLs (one per line)</span>
+                        <span class="url-count" id="url-count">0 URLs</span>
+                    </div>
+                    <textarea 
+                        id="multi-url-input" 
+                        placeholder="https://www.instagram.com/reel/ABC123/&#10;https://www.instagram.com/p/XYZ789/&#10;https://www.instagram.com/reel/DEF456/&#10;&#10;Paste up to 10 URLs, one per line..."
+                    ></textarea>
+                </div>
+
+                <button class="download-btn" id="download-btn" onclick="handleDownload()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span id="btn-text">Download Video</span>
+                </button>
+
+                <div class="error-message" id="error-message"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p class="loading-text" id="loading-text">Fetching video...</p>
+                <div class="progress-container" id="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">0 / 0 videos</p>
+                </div>
+            </div>
+
+            <!-- Batch Results -->
+            <div class="results-section" id="results-section">
+                <div class="results-header">
+                    <h3 class="results-title">Downloaded Videos</h3>
+                    <span class="results-summary" id="results-summary"></span>
+                </div>
+                <div id="results-list"></div>
+                <button class="new-download-btn" onclick="resetForm()">Download More Videos</button>
+            </div>
+
+            <!-- Single Video Success -->
+            <div class="success-card" id="success-card">
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h2 class="success-title">Download Ready!</h2>
+                <p class="success-subtitle">Your video is ready to save and share</p>
+                <div class="success-actions">
+                    <a href="#" class="download-file-btn" id="file-download-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Save Video
+                    </a>
+                    <button class="whatsapp-share-btn" id="whatsapp-share-btn" onclick="openShareModal('whatsapp')">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        WhatsApp
+                    </button>
+                    <button class="instagram-share-btn" id="instagram-share-btn" onclick="openShareModal('instagram')">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                        Instagram
+                    </button>
+                </div>
+                <button class="new-download-btn" onclick="resetForm()">Download Another</button>
+            </div>
+        </main>
+
+        <section class="features">
+            <div class="feature">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <h4>Lightning Fast</h4>
+                <p>Download in seconds</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </div>
+                <h4>Batch Mode</h4>
+                <p>Up to 10 at once</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon instagram">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                </div>
+                <h4>Share</h4>
+                <p>WhatsApp & Insta</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5"></path>
+                        <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                </div>
+                <h4>HD Quality</h4>
+                <p>Best resolution</p>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>For personal use only. Respect content creators' rights.</p>
+        </footer>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="share-modal">
+        <div class="modal">
+            <div class="modal-header" id="modal-header">
+                <div class="modal-icon" id="modal-icon">
+                    <!-- Icon will be set by JS -->
+                </div>
+                <h3 class="modal-title" id="modal-title">Share Video</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-description">Choose how you'd like to share this video:</p>
+                
+                <!-- WhatsApp Options -->
+                <div class="share-options" id="whatsapp-options">
+                    <a href="#" class="share-option" id="share-whatsapp-web" target="_blank">
+                        <div class="share-option-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                            </svg>
+                        </div>
+                        <div class="share-option-text">
+                            <h4>WhatsApp Web</h4>
+                            <p>Open in browser</p>
+                        </div>
+                    </a>
+                    <a href="#" class="share-option" id="share-whatsapp-app">
+                        <div class="share-option-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                            </svg>
+                        </div>
+                        <div class="share-option-text">
+                            <h4>WhatsApp App</h4>
+                            <p>Open in mobile app</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Instagram Options -->
+                <div class="share-options" id="instagram-options" style="display: none;">
+                    <a href="#" class="share-option" id="share-instagram-dm" target="_blank">
+                        <div class="share-option-icon" style="background: var(--instagram-gradient);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13"></path>
+                                <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                            </svg>
+                        </div>
+                        <div class="share-option-text">
+                            <h4>Instagram DM</h4>
+                            <p>Send via Direct Message</p>
+                        </div>
+                    </a>
+                    <a href="#" class="share-option" id="share-instagram-story" target="_blank">
+                        <div class="share-option-icon" style="background: var(--instagram-gradient);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 8v8"></path>
+                                <path d="M8 12h8"></path>
+                            </svg>
+                        </div>
+                        <div class="share-option-text">
+                            <h4>Copy Link for Story</h4>
+                            <p>Share in your story</p>
+                        </div>
+                    </a>
+                    <button class="share-option" id="share-instagram-copy" onclick="copyDownloadLink()">
+                        <div class="share-option-icon" style="background: var(--instagram-gradient);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </div>
+                        <div class="share-option-text">
+                            <h4>Copy Download Link</h4>
+                            <p>Paste anywhere on Instagram</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Copy Success Message -->
+                <div id="copy-success" style="display: none; text-align: center; padding: 12px; background: rgba(16, 185, 129, 0.2); border-radius: 8px; margin-top: 12px; color: #10b981;">
+                    ✓ Link copied to clipboard!
+                </div>
+            </div>
+            <button class="modal-close" onclick="closeShareModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentMode = 'single';
+        let currentFileId = null;
+        let downloadedFiles = [];
+
+        // Elements
+        const urlInput = document.getElementById('url-input');
+        const multiUrlInput = document.getElementById('multi-url-input');
+        const downloadBtn = document.getElementById('download-btn');
+        const btnText = document.getElementById('btn-text');
+        const errorMessage = document.getElementById('error-message');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const successCard = document.getElementById('success-card');
+        const resultsSection = document.getElementById('results-section');
+        const resultsList = document.getElementById('results-list');
+        const formSection = document.getElementById('form-section');
+
+        // Mode switching
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            
+            document.getElementById('single-input-group').style.display = mode === 'single' ? 'block' : 'none';
+            document.getElementById('multi-input-group').classList.toggle('active', mode === 'batch');
+            btnText.textContent = mode === 'single' ? 'Download Video' : 'Download All Videos';
+        }
+
+        // URL count for batch mode
+        multiUrlInput.addEventListener('input', () => {
+            const urls = multiUrlInput.value.split('\n').filter(url => url.trim());
+            document.getElementById('url-count').textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+        });
+
+        // Paste functionality
+        async function pasteFromClipboard(inputId) {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById(inputId).value = text;
+                document.getElementById(inputId).focus();
+            } catch (err) {
+                console.error('Failed to read clipboard:', err);
+            }
+        }
+
+        // Error handling
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+            setTimeout(() => {
+                errorMessage.classList.remove('active');
+            }, 5000);
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('active');
+        }
+
+        // Loading states
+        function showLoading(text = 'Fetching video...', showProgress = false) {
+            loadingText.textContent = text;
+            loading.classList.add('active');
+            formSection.style.display = 'none';
+            successCard.classList.remove('active');
+            resultsSection.classList.remove('active');
+            progressContainer.style.display = showProgress ? 'block' : 'none';
+        }
+
+        function hideLoading() {
+            loading.classList.remove('active');
+        }
+
+        function updateProgress(current, total) {
+            const percent = Math.round((current / total) * 100);
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `${current} / ${total} videos`;
+        }
+
+        // Main download handler
+        async function handleDownload() {
+            hideError();
+            
+            if (currentMode === 'single') {
+                await downloadSingleVideo();
+            } else {
+                await downloadBatchVideos();
+            }
+        }
+
+        // Single video download
+        async function downloadSingleVideo() {
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showError('Please enter an Instagram URL');
+                return;
+            }
+
+            try {
+                showLoading('Fetching video info...');
+                
+                // Get info first
+                const infoResponse = await fetch('/api/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const infoData = await infoResponse.json();
+
+                if (!infoResponse.ok) {
+                    hideLoading();
+                    formSection.style.display = 'block';
+                    showError(infoData.error);
+                    return;
+                }
+
+                // Download
+                showLoading('Downloading video...');
+
+                const downloadResponse = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const downloadData = await downloadResponse.json();
+                hideLoading();
+
+                if (!downloadResponse.ok) {
+                    formSection.style.display = 'block';
+                    showError(downloadData.error);
+                    return;
+                }
+
+                // Success
+                currentFileId = downloadData.file_id;
+                document.getElementById('file-download-link').href = `/api/file/${downloadData.file_id}`;
+                successCard.classList.add('active');
+
+            } catch (err) {
+                hideLoading();
+                formSection.style.display = 'block';
+                showError('Connection error. Please try again.');
+                console.error(err);
+            }
+        }
+
+        // Batch video download
+        async function downloadBatchVideos() {
+            const urls = multiUrlInput.value.split('\n')
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+            
+            if (urls.length === 0) {
+                showError('Please enter at least one Instagram URL');
+                return;
+            }
+
+            if (urls.length > 10) {
+                showError('Maximum 10 videos can be downloaded at once');
+                return;
+            }
+
+            try {
+                showLoading('Downloading videos...', true);
+                updateProgress(0, urls.length);
+
+                const response = await fetch('/api/download-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (!response.ok) {
+                    formSection.style.display = 'block';
+                    showError(data.error);
+                    return;
+                }
+
+                // Show results
+                downloadedFiles = data.results.filter(r => r.success);
+                renderResults(data);
+
+            } catch (err) {
+                hideLoading();
+                formSection.style.display = 'block';
+                showError('Connection error. Please try again.');
+                console.error(err);
+            }
+        }
+
+        // Render batch results
+        function renderResults(data) {
+            resultsSection.classList.add('active');
+            
+            document.getElementById('results-summary').innerHTML = 
+                `<span class="success">${data.successful} successful</span> · <span class="failed">${data.failed} failed</span>`;
+
+            resultsList.innerHTML = data.results.map(result => {
+                if (result.success) {
+                    return `
+                        <div class="video-card">
+                            <img class="video-thumbnail" src="${result.thumbnail || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231a1a25%22 width=%22100%22 height=%22100%22/></svg>'}" alt="">
+                            <div class="video-info">
+                                <h4 class="video-title">${result.title || 'Instagram Video'}</h4>
+                                <p class="video-uploader">@${result.uploader || 'unknown'}</p>
+                            </div>
+                            <div class="video-actions">
+                                <a href="/api/file/${result.file_id}" class="action-btn download">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7,10 12,15 17,10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Save
+                                </a>
+                                <button class="action-btn whatsapp" onclick="openShareModalForFile('${result.file_id}', 'whatsapp')">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn instagram" onclick="openShareModalForFile('${result.file_id}', 'instagram')">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="video-card error">
+                            <div class="video-thumbnail" style="display: flex; align-items: center; justify-content: center;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" width="32" height="32">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                </svg>
+                            </div>
+                            <div class="video-info">
+                                <h4 class="video-title" style="color: var(--error-red);">Download Failed</h4>
+                                <p class="video-error">${result.error || 'Unknown error'}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // Share Modal
+        const shareModal = document.getElementById('share-modal');
+        let currentShareFileId = null;
+
+        const whatsappIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+        
+        const instagramIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>`;
+
+        function openShareModal(platform) {
+            if (!currentFileId) return;
+            openShareModalForFile(currentFileId, platform);
+        }
+
+        function openShareModalForFile(fileId, platform) {
+            currentShareFileId = fileId;
+            const downloadUrl = `${window.location.origin}/api/file/${fileId}`;
+            const message = `Check out this video! 🎬\n\nDownload here: ${downloadUrl}`;
+            const encodedMessage = encodeURIComponent(message);
+
+            const modalIcon = document.getElementById('modal-icon');
+            const modalTitle = document.getElementById('modal-title');
+            const whatsappOptions = document.getElementById('whatsapp-options');
+            const instagramOptions = document.getElementById('instagram-options');
+            const copySuccess = document.getElementById('copy-success');
+
+            copySuccess.style.display = 'none';
+
+            if (platform === 'whatsapp') {
+                modalIcon.innerHTML = whatsappIcon;
+                modalIcon.style.background = 'var(--whatsapp-green)';
+                modalTitle.textContent = 'Share on WhatsApp';
+                whatsappOptions.style.display = 'flex';
+                instagramOptions.style.display = 'none';
+
+                document.getElementById('share-whatsapp-web').href = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+                document.getElementById('share-whatsapp-app').href = `whatsapp://send?text=${encodedMessage}`;
+            } else {
+                modalIcon.innerHTML = instagramIcon;
+                modalIcon.style.background = 'var(--instagram-gradient)';
+                modalTitle.textContent = 'Share on Instagram';
+                whatsappOptions.style.display = 'none';
+                instagramOptions.style.display = 'flex';
+
+                // Instagram DM - opens Instagram app/web
+                document.getElementById('share-instagram-dm').href = `https://www.instagram.com/direct/inbox/`;
+                // Story link 
+                document.getElementById('share-instagram-story').href = `https://www.instagram.com/`;
+            }
+
+            shareModal.classList.add('active');
+        }
+
+        function copyDownloadLink() {
+            if (!currentShareFileId) return;
+            
+            const downloadUrl = `${window.location.origin}/api/file/${currentShareFileId}`;
+            const message = `Check out this video! 🎬\n\nDownload here: ${downloadUrl}`;
+            
+            navigator.clipboard.writeText(message).then(() => {
+                const copySuccess = document.getElementById('copy-success');
+                copySuccess.style.display = 'block';
+                setTimeout(() => {
+                    copySuccess.style.display = 'none';
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy link. Please try again.');
+            });
+        }
+
+        function closeShareModal() {
+            shareModal.classList.remove('active');
+            currentShareFileId = null;
+        }
+
+        // Close modal on overlay click
+        shareModal.addEventListener('click', (e) => {
+            if (e.target === shareModal) {
+                closeShareModal();
+            }
+        });
+
+        // Reset form
+        function resetForm() {
+            urlInput.value = '';
+            multiUrlInput.value = '';
+            document.getElementById('url-count').textContent = '0 URLs';
+            currentFileId = null;
+            downloadedFiles = [];
+            formSection.style.display = 'block';
+            successCard.classList.remove('active');
+            resultsSection.classList.remove('active');
+            hideError();
+        }
+
+        // Enter key to submit
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleDownload();
+        });
+
+        // Focus input on load
+        setTimeout(() => urlInput.focus(), 500);
+    </script>
+</body>
+</html>
